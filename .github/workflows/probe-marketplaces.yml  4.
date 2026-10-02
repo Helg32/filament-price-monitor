@@ -1,0 +1,29 @@
+name: Проверка доступа к маркетплейсам
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Получить файлы репозитория
+        uses: actions/checkout@v4
+
+      - name: Установить Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Установить Playwright и Chromium
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+
+      - name: Проверить маркетплейсы и отправить результат в MAX
+        env:
+          NOTIFY_URL: ${{ secrets.NOTIFY_URL }}
+          WEBHOOK_KEY: ${{ secrets.WEBHOOK_KEY }}
+        run: node probe.mjs
