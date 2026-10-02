@@ -1,0 +1,34 @@
+name: Проверка отправки в MAX
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Отправить тестовое сообщение
+        env:
+          NOTIFY_URL: ${{ secrets.NOTIFY_URL }}
+          WEBHOOK_KEY: ${{ secrets.WEBHOOK_KEY }}
+        run: |
+          payload=$(jq -nc \
+            --arg text "Тест: GitHub Actions успешно работает и отправляет сообщения в MAX через Yandex Cloud." \
+            '{text: $text}')
+
+          response=$(curl -sS \
+            -w '\n%{http_code}' \
+            -X POST "$NOTIFY_URL" \
+            -H "X-Webhook-Key: $WEBHOOK_KEY" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data "$payload")
+
+          http_code=$(printf '%s' "$response" | tail -n 1)
+          body=$(printf '%s' "$response" | sed '$d')
+
+          echo "HTTP: $http_code"
+          echo "Ответ: $body"
+
+          test "$http_code" = "200"
+          echo "$body" | jq -e '.ok == true'
